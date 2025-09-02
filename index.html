@@ -1,0 +1,333 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>📅 Emploi du temps</title>
+    <style>
+        :root {
+            --bg-color: #f4f7f6;
+            --container-bg: #ffffff;
+            --text-color: #333333;
+            --secondary-text-color: #666666;
+            --border-color: #e0e0e0;
+            --accent-color: #007bff;
+            --accent-light: #e6f2ff;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            line-height: 1.6;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 700px;
+            margin: auto;
+            background-color: var(--container-bg);
+            padding: 25px 35px;
+            border-radius: 8px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+        }
+
+        h1 {
+            text-align: center;
+            font-weight: 400;
+            font-size: 1.8rem;
+            margin-bottom: 20px;
+            color: var(--text-color);
+        }
+
+        .date-header {
+            text-align: center;
+            margin-bottom: 25px;
+            padding: 15px;
+            border-radius: 6px;
+            background-color: var(--accent-light);
+            color: var(--accent-color);
+            border: 1px solid var(--accent-color);
+        }
+
+        .date-header h2 {
+            font-size: 1.2rem;
+            margin: 0;
+        }
+
+        .date-header p {
+            font-size: 0.9rem;
+            opacity: 0.8;
+            margin: 5px 0 0;
+        }
+
+        .navigation {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 25px;
+            gap: 10px;
+        }
+
+        .nav-btn {
+            background-color: var(--accent-color);
+            color: white;
+            border: none;
+            padding: 10px 15px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 0.9rem;
+            transition: background-color 0.2s;
+            flex-grow: 1;
+            text-align: center;
+        }
+
+        .nav-btn:hover {
+            background-color: #0056b3;
+        }
+
+        .nav-btn:disabled {
+            background-color: #cccccc;
+            cursor: not-allowed;
+        }
+
+        #todayBtn {
+            flex-grow: 2;
+        }
+
+        .course-card {
+            padding: 15px;
+            border-left: 3px solid var(--border-color);
+            background-color: var(--container-bg);
+            margin-bottom: 12px;
+            border-radius: 4px;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+
+        .course-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+        }
+
+        .course-card h3 {
+            font-size: 1.1rem;
+            font-weight: 500;
+            margin-top: 0;
+            margin-bottom: 8px;
+        }
+
+        .course-card p {
+            font-size: 0.9rem;
+            margin: 0 0 5px;
+            color: var(--secondary-text-color);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .course-card p:last-child {
+            margin-bottom: 0;
+        }
+
+        .no-courses {
+            text-align: center;
+            padding: 40px 20px;
+            color: var(--secondary-text-color);
+        }
+
+        .no-courses strong {
+            display: block;
+            margin-bottom: 5px;
+        }
+
+        .loading, .error-message {
+            text-align: center;
+            padding: 30px;
+        }
+
+        .loading p, .error-message p {
+            margin-top: 10px;
+        }
+
+        .spinner {
+            border: 4px solid rgba(0, 0, 0, 0.1);
+            border-top: 4px solid var(--accent-color);
+            border-radius: 50%;
+            width: 30px;
+            height: 30px;
+            animation: spin 1s linear infinite;
+            margin: auto;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        /* Couleurs des bordures de cours */
+        .course-r301 { border-left-color: #FF6B6B; }
+        .course-r302 { border-left-color: #4ECDC4; }
+        .course-r303 { border-left-color: #45B7D1; }
+        .course-r304 { border-left-color: #F7DC6F; }
+        .course-r307 { border-left-color: #BB8FCE; }
+        .course-r308 { border-left-color: #85C1E9; }
+        .course-r309 { border-left-color: #F8C471; }
+        .course-r310 { border-left-color: #82E0AA; }
+        .course-r311 { border-left-color: #F1948A; }
+        .course-r312 { border-left-color: #D7BDE2; }
+        .course-r313 { border-left-color: #AED6F1; }
+        .course-meeting { border-left-color: #34495E; }
+    </style>
+</head>
+<body>
+<div class="container">
+    <h1> Emploi du temps</h1>
+    <div class="date-header">
+        <h2 id="currentDate">Chargement...</h2>
+        <p id="currentDay">...</p>
+    </div>
+    <div class="navigation">
+        <button class="nav-btn" id="prevBtn" onclick="changeDay(-1)">Précédent</button>
+        <button class="nav-btn" id="todayBtn" onclick="goToToday()">Aujourd'hui</button>
+        <button class="nav-btn" id="nextBtn" onclick="changeDay(1)">Suivant</button>
+    </div>
+    <div id="loading" class="loading">
+        <div class="spinner"></div>
+        <p>Chargement de votre emploi du temps...</p>
+    </div>
+    <div id="errorMessage" class="error-message" style="display:none;">
+        <h3>Fichier non trouvé ❌</h3>
+        <p>Assurez-vous que le fichier **ADECal.ics** est dans le même dossier.</p>
+    </div>
+    <div id="coursesContainer" style="display:none;"></div>
+</div>
+
+<script>
+    let allEvents = [];
+    let currentDisplayDate = new Date();
+
+    const dayNames = ['Dimanche', 'Lundi', 'Mardi', 'Mercredi', 'Jeudi', 'Vendredi', 'Samedi'];
+    const monthNames = ['Janvier', 'Février', 'Mars', 'Avril', 'Mai', 'Juin', 'Juillet', 'Août', 'Septembre', 'Octobre', 'Novembre', 'Décembre'];
+
+    async function loadFile() {
+        try {
+            const response = await fetch('ADECal.ics');
+            if (!response.ok) {
+                throw new Error('Erreur de chargement du fichier ADECal.ics');
+            }
+            const fileContent = await response.text();
+            const events = parseICS(fileContent);
+            allEvents = events;
+            document.getElementById('loading').style.display = 'none';
+            document.getElementById('coursesContainer').style.display = 'block';
+            displayDay(currentDisplayDate);
+        } catch (error) {
+            console.error('Erreur lors du chargement:', error);
+            document.getElementById('loading').style.display = 'none';
+            document.getElementById('errorMessage').style.display = 'block';
+        }
+    }
+
+    function parseICS(icsString) {
+        const events = [];
+        const lines = icsString.split(/\r?\n/);
+        let currentEvent = null;
+
+        for (let line of lines) {
+            line = line.trim();
+            if (line === 'BEGIN:VEVENT') {
+                currentEvent = {};
+            } else if (line === 'END:VEVENT' && currentEvent) {
+                if (currentEvent.title && currentEvent.start && currentEvent.end) {
+                    events.push(currentEvent);
+                }
+                currentEvent = null;
+            } else if (currentEvent && line.includes(':')) {
+                const colonIndex = line.indexOf(':');
+                const key = line.substring(0, colonIndex);
+                const value = line.substring(colonIndex + 1);
+                if (key === 'SUMMARY') {
+                    currentEvent.title = cleanText(value);
+                } else if (key === 'DTSTART') {
+                    currentEvent.start = parseICSDate(value);
+                } else if (key === 'DTEND') {
+                    currentEvent.end = parseICSDate(value);
+                } else if (key === 'LOCATION') {
+                    currentEvent.location = value;
+                } else if (key === 'DESCRIPTION') {
+                    const desc = value.replace(/\\n/g, '\n');
+                    const teacherMatch = desc.match(/\n([^\\n\r\(]+)\n/);
+                    if (teacherMatch && teacherMatch[1].trim() && !teacherMatch[1].includes('Groupe')) {
+                        currentEvent.teacher = teacherMatch[1].trim();
+                    }
+                }
+            }
+        }
+        return events.sort((a, b) => a.start - b.start);
+    }
+
+    function parseICSDate(dateString) {
+        const year = parseInt(dateString.substr(0, 4));
+        const month = parseInt(dateString.substr(4, 2)) - 1;
+        const day = parseInt(dateString.substr(6, 2));
+        const hour = parseInt(dateString.substr(9, 2));
+        const minute = parseInt(dateString.substr(11, 2));
+        return new Date(year, month, day, hour, minute);
+    }
+
+    function cleanText(text) {
+        return text.replace(/Ã¨/g, 'è').replace(/Ã©/g, 'é').replace(/Ã /g, 'à').replace(/Ã´/g, 'ô').replace(/Ã¢/g, 'â').replace(/Ã§/g, 'ç').replace(/Ã¹/g, 'ù').replace(/Ãª/g, 'ê');
+    }
+
+    function getCourseClass(title) {
+        const courseCode = title.match(/R3\.(\d+)/);
+        return courseCode ? 'course-r3' + courseCode[1].padStart(2, '0') : 'course-meeting';
+    }
+
+    function displayDay(date) {
+        const dayName = dayNames[date.getDay()];
+        const day = date.getDate();
+        const month = monthNames[date.getMonth()];
+        const year = date.getFullYear();
+
+        document.getElementById('currentDate').textContent = `${dayName} ${day} ${month} ${year}`;
+        const today = new Date();
+        document.getElementById('currentDay').textContent = isSameDay(date, today) ? "🎯 Aujourd'hui" : (date < today ? "📅 Jour passé" : "📅 Jour à venir");
+
+        const dayEvents = allEvents.filter(event => isSameDay(event.start, date));
+        const container = document.getElementById('coursesContainer');
+
+        if (dayEvents.length === 0) {
+            container.innerHTML = `<div class="no-courses"><strong>Pas de cours aujourd'hui !</strong><small>Profitez de cette journée libre 😎</small></div>`;
+        } else {
+            container.innerHTML = dayEvents.map(event => {
+                const startTime = event.start.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' });
+                const endTime = event.end.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' });
+                return `<div class="course-card ${getCourseClass(event.title)}">
+                                <h3>${event.title}</h3>
+                                <p><strong>⏰</strong> ${startTime} - ${endTime}</p>
+                                <p><strong>📍</strong> Salle ${event.location || 'Non spécifiée'}</p>
+                                ${event.teacher ? `<p><strong>👨‍🏫</strong> ${event.teacher}</p>` : ''}
+                            </div>`;
+            }).join('');
+        }
+    }
+
+    function isSameDay(date1, date2) {
+        return date1.getDate() === date2.getDate() && date1.getMonth() === date2.getMonth() && date1.getFullYear() === date2.getFullYear();
+    }
+
+    function changeDay(direction) {
+        currentDisplayDate.setDate(currentDisplayDate.getDate() + direction);
+        displayDay(currentDisplayDate);
+    }
+
+    function goToToday() {
+        currentDisplayDate = new Date();
+        displayDay(currentDisplayDate);
+    }
+
+    document.addEventListener('DOMContentLoaded', loadFile);
+</script>
+</body>
+</html>
