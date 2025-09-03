@@ -129,6 +129,11 @@
             margin-bottom: 0;
         }
 
+        .teacher-name {
+            font-weight: 500;
+            color: var(--text-color);
+        }
+
         .no-courses {
             text-align: center;
             padding: 40px 20px;
@@ -239,6 +244,9 @@
                 currentEvent = {};
             } else if (line === 'END:VEVENT' && currentEvent) {
                 if (currentEvent.title && currentEvent.start && currentEvent.end) {
+                    // Ajouter 2 heures aux horaires
+                    currentEvent.start = new Date(currentEvent.start.getTime() + (2 * 60 * 60 * 1000));
+                    currentEvent.end = new Date(currentEvent.end.getTime() + (2 * 60 * 60 * 1000));
                     events.push(currentEvent);
                 }
                 currentEvent = null;
@@ -256,9 +264,61 @@
                     currentEvent.location = value;
                 } else if (key === 'DESCRIPTION') {
                     const desc = value.replace(/\\n/g, '\n');
-                    const teacherMatch = desc.match(/\n([^\\n\r\(]+)\n/);
-                    if (teacherMatch && teacherMatch[1].trim() && !teacherMatch[1].includes('Groupe')) {
-                        currentEvent.teacher = teacherMatch[1].trim();
+
+                    // Extraction améliorée du nom du professeur
+                    const cleanDesc = cleanText(desc);
+
+                    // Méthodes multiples d'extraction du nom du professeur
+                    let teacherName = null;
+
+                    // Méthode 1: Chercher après "Exported" ou au début
+                    const teacherPatterns = [
+                        /\n([A-ZÀÂÄÉÈÊËÏÎÔÖÙÛÜŸÇ][a-zàâäéèêëïîôöùûüÿç]+ [A-ZÀÂÄÉÈÊËÏÎÔÖÙÛÜŸÇ][A-ZÀÂÄÉÈÊËÏÎÔÖÙÛÜŸÇ\-']+)\n/,
+                        /\n([A-ZÀÂÄÉÈÊËÏÎÔÖÙÛÜŸÇ][A-ZÀÂÄÉÈÊËÏÎÔÖÙÛÜŸÇ\-']+ [A-ZÀÂÄÉÈÊËÏÎÔÖÙÛÜŸÇ][a-zàâäéèêëïîôöùûüÿç]+)\n/,
+                        /\n([A-ZÀÂÄÉÈÊËÏÎÔÖÙÛÜŸÇ][a-zàâäéèêëïîôöùûüÿç]+ [A-ZÀÂÄÉÈÊËÏÎÔÖÙÛÜŸÇ][a-zàâäéèêëïîôöùûüÿç]+)\n/,
+                        /([A-ZÀÂÄÉÈÊËÏÎÔÖÙÛÜŸÇ][a-zàâäéèêëïîôöùûüÿç]+ [A-ZÀÂÄÉÈÊËÏÎÔÖÙÛÜŸÇ][A-ZÀÂÄÉÈÊËÏÎÔÖÙÛÜŸÇ\-']+)/,
+                        /([A-ZÀÂÄÉÈÊËÏÎÔÖÙÛÜŸÇ]{2,} [A-ZÀÂÄÉÈÊËÏÎÔÖÙÛÜŸÇ][a-zàâäéèêëïîôöùûüÿç]+)/
+                    ];
+
+                    for (const pattern of teacherPatterns) {
+                        const match = cleanDesc.match(pattern);
+                        if (match && match[1]) {
+                            const candidate = match[1].trim();
+                            // Vérifier que ce n'est pas un groupe ou une salle
+                            if (!candidate.includes('Groupe') &&
+                                !candidate.includes('Salle') &&
+                                !candidate.includes('TD') &&
+                                !candidate.includes('TP') &&
+                                !candidate.includes('CM') &&
+                                !candidate.match(/^[A-Z]\d/) && // Éviter les codes de salle comme A201
+                                candidate.length > 5 &&
+                                candidate.split(' ').length >= 2) {
+                                teacherName = candidate;
+                                break;
+                            }
+                        }
+                    }
+
+                    // Si pas trouvé, essayer d'extraire de façon plus permissive
+                    if (!teacherName) {
+                        const lines = cleanDesc.split('\n').filter(line => line.trim());
+                        for (const line of lines) {
+                            const trimmed = line.trim();
+                            if (trimmed.length > 5 &&
+                                trimmed.split(' ').length >= 2 &&
+                                !trimmed.includes('Groupe') &&
+                                !trimmed.includes('Salle') &&
+                                !trimmed.includes('Exported') &&
+                                !trimmed.match(/^\d/) &&
+                                /^[A-ZÀÂÄÉÈÊËÏÎÔÖÙÛÜŸÇ]/.test(trimmed)) {
+                                teacherName = trimmed;
+                                break;
+                            }
+                        }
+                    }
+
+                    if (teacherName) {
+                        currentEvent.teacher = teacherName;
                     }
                 }
             }
@@ -276,7 +336,19 @@
     }
 
     function cleanText(text) {
-        return text.replace(/Ã¨/g, 'è').replace(/Ã©/g, 'é').replace(/Ã /g, 'à').replace(/Ã´/g, 'ô').replace(/Ã¢/g, 'â').replace(/Ã§/g, 'ç').replace(/Ã¹/g, 'ù').replace(/Ãª/g, 'ê');
+        return text.replace(/Ã¨/g, 'è')
+            .replace(/Ã©/g, 'é')
+            .replace(/Ã /g, 'à')
+            .replace(/Ã´/g, 'ô')
+            .replace(/Ã¢/g, 'â')
+            .replace(/Ã§/g, 'ç')
+            .replace(/Ã¹/g, 'ù')
+            .replace(/Ãª/g, 'ê')
+            .replace(/Ã®/g, 'î')
+            .replace(/Ã¯/g, 'ï')
+            .replace(/Ã«/g, 'ë')
+            .replace(/Ãº/g, 'ú')
+            .replace(/Ã¼/g, 'ü');
     }
 
     function getCourseClass(title) {
@@ -307,7 +379,7 @@
                                 <h3>${event.title}</h3>
                                 <p><strong>⏰</strong> ${startTime} - ${endTime}</p>
                                 <p><strong>📍</strong> Salle ${event.location || 'Non spécifiée'}</p>
-                                ${event.teacher ? `<p><strong>👨‍🏫</strong> ${event.teacher}</p>` : ''}
+                                <p><strong>👨‍🏫</strong> <span class="teacher-name">${event.teacher || 'Professeur non spécifié'}</span></p>
                             </div>`;
             }).join('');
         }
