@@ -244,9 +244,8 @@
                 currentEvent = {};
             } else if (line === 'END:VEVENT' && currentEvent) {
                 if (currentEvent.title && currentEvent.start && currentEvent.end) {
-                    // Ajouter 2 heures aux horaires
-                    currentEvent.start = new Date(currentEvent.start.getTime() + (2 * 60 * 60 * 1000));
-                    currentEvent.end = new Date(currentEvent.end.getTime() + (2 * 60 * 60 * 1000));
+                    currentEvent.start = new Date(currentEvent.start.getTime() + (1 * 60 * 60 * 1000));
+                    currentEvent.end = new Date(currentEvent.end.getTime() + (1 * 60 * 60 * 1000));
                     events.push(currentEvent);
                 }
                 currentEvent = null;
@@ -370,7 +369,7 @@
         const container = document.getElementById('coursesContainer');
 
         if (dayEvents.length === 0) {
-            container.innerHTML = `<div class="no-courses"><strong>Pas de cours aujourd'hui !</strong><small>Profitez de cette journée libre 😎</small></div>`;
+            container.innerHTML = `<div class="no-courses"><strong>Pas de cours aujourd'hui !</strong><small>GROS NUL !</small></div>`;
         } else {
             container.innerHTML = dayEvents.map(event => {
                 const startTime = event.start.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' });
